@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway Surfers Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<div id="scoreboard">Score: 0</div>
+<script>
+// Basic scene setup
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Add ambient light for better visibility
+const ambientLight = new THREE.AmbientLight(0xffffff, 1); // White light
+scene.add(ambientLight);
+
+// Load textures
+const textureLoader = new THREE.TextureLoader();
+const groundTexture = textureLoader.load('https://plus.unsplash.com/premium_photo-1673828332632-17fe468ed31e?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'); // Replace with your ground texture URL
+const rockTexture = textureLoader.load('https://images.unsplash.com/photo-1599389931990-ffb2373161b5?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'); // Rock texture
+
+// Configure ground texture wrapping and scaling
+groundTexture.wrapS = THREE.RepeatWrapping;
+groundTexture.wrapT = THREE.RepeatWrapping;
+groundTexture.repeat.set(1, 10); // Adjust texture repetition for effect
+
+// Create ground tiles with texture
+const groundTiles = [];
+const groundTileLength = 20; // Length of each tile
+const numberOfTiles = 10;    // Total number of tiles
+
+for (let i = 0; i < numberOfTiles; i++) {
+    const groundGeometry = new THREE.PlaneGeometry(20, groundTileLength);
+    const groundMaterial = new THREE.MeshBasicMaterial({ map: groundTexture });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -i * groundTileLength;
+    scene.add(ground);
+    groundTiles.push(ground);
+}
+
+// Player (cube)
+const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const player = new THREE.Mesh(playerGeometry, playerMaterial);
+player.position.set(0, 1, 0);
+scene.add(player);
+
+// Rock obstacles
+const rocks = [];
+let score = 0; // Score counter
+
+function spawnRock() {
+    const rockGeometry = new THREE.SphereGeometry(1.5, 16, 16); // Round rock
+    const rockMaterial = new THREE.MeshBasicMaterial({ map: rockTexture }); // Apply rock texture
+    const rock = new THREE.Mesh(rockGeometry, rockMaterial);
+    rock.position.set((Math.random() * 6) - 3, 1, -100); // Random x-position
+    scene.add(rock);
+    rocks.push(rock);
+}
+setInterval(spawnRock, 2000); // Spawn every 2 seconds
+
+// Coins
+const coins = [];
+
+function spawnCoin() {
+    const coinGeometry = new THREE.SphereGeometry(1, 16, 16); // Twice as big
+    const coinMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Yellow color
+    const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+    coin.position.set((Math.random() * 6) - 3, 1, -100); // Random x-position
+    scene.add(coin);
+    coins.push(coin);
+}
+setInterval(spawnCoin, 3000); // Spawn every 3 seconds
+
+// Movement variables
+let groundSpeed = 0.1;      // Initial ground speed
+let obstacleSpeed = 0.5;    // Initial obstacle speed
+const playerSpeed = 3;
+let moveLeft = false, moveRight = false;
+let gameSpeedIncrease = 0.0005; // Slower speed increase factor over time
+
+// Keyboard input
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') moveLeft = true;
+    if (event.key === 'ArrowRight') moveRight = true;
+});
+
+document.addEventListener('keyup', (event) => {
+    if (event.key === 'ArrowLeft') moveLeft = false;
+    if (event.key === 'ArrowRight') moveRight = false;
+});
+
+// Game Loop
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Gradually increase game speed
+    groundSpeed += gameSpeedIncrease;
+    obstacleSpeed += gameSpeedIncrease;
+
+    // Move ground tiles and animate texture
+    groundTiles.forEach((tile) => {
+        tile.position.z += groundSpeed;
+        if (tile.position.z > groundTileLength * (numberOfTiles / 2)) {
+            tile.position.z -= groundTileLength * numberOfTiles; // Loop to the back
+        }
+
+        // Scroll texture to create motion illusion
+        tile.material.map.offset.y -= groundSpeed * 0.02;
+    });
+
+    // Move rocks
+    rocks.forEach((rock, index) => {
+        rock.position.z += obstacleSpeed;
+
+        // Check if rock passes the player (dodged)
+        if (rock.position.z > 10) {
+            scene.remove(rock);
+            rocks.splice(index, 1);
+        }
+
+        // Collision detection with player
+        if (player.position.distanceTo(rock.position) < 2) {
+            alert("Game Over! Your score: " + score);
+            window.location.reload();
+        }
+    });
+
+    // Move coins and check collection
+    coins.forEach((coin, index) => {
+        coin.position.z += obstacleSpeed;
+
+        // Check if coin passes the player
+        if (coin.position.z > 10) {
+            scene.remove(coin);
+            coins.splice(index, 1);
+        }
+
+        // Coin collection detection
+        if (player.position.distanceTo(coin.position) < 2) {
+            scene.remove(coin);
+            coins.splice(index, 1);
+            score += 1; // Increase score by 1 for each coin
+            document.getElementById("scoreboard").innerText = "Score: " + score;
+        }
+    });
+
+    // Player movement
+    if (moveLeft && player.position.x > -4) player.position.x -= playerSpeed * 0.1;
+    if (moveRight && player.position.x < 4) player.position.x += playerSpeed * 0.1;
+
+    renderer.render(scene, camera);
+}
+
+// Initialize camera position
+camera.position.set(0, 5, 15);
+camera.lookAt(0, 0, -50);
+
+animate();
+</script>
+</body>
+</html>
