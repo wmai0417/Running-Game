@@ -11,6 +11,7 @@ This is a simple 3D game inspired by *Subway Surfers* built using [Three.js](htt
 - **Dynamic Environment**: The ground moves continuously to simulate player motion.
 - **Obstacles**: Rocks with realistic textures spawn dynamically and must be avoided.
 - **Coins**: Collectible coins increase the player's score.
+- **Increasing Difficulty**: Game speeds up over time reducing reaction time.
 - **Collision Detection**: Alerts the player when they collide with an obstacle and restarts the game.
 - **Keyboard Controls**: 
   - Arrow keys (`←` and `→`) to move the player left or right.
