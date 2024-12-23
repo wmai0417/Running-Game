@@ -2,7 +2,7 @@
 
 This is a simple 3D game inspired by *Subway Surfers* built using [Three.js](https://threejs.org/). Players control a character navigating a dynamic environment, avoiding obstacles (textured rocks), and collecting coins to increase their score.
 
-![Screenshot][sc1.jpg]
+![Screenshot](sc1.jpg)
 
 ---
 
